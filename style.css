@@ -1,0 +1,33 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+#board {
+  display: grid;
+  gap: 1px;
+  background-color: #ccc;
+  border: 1px solid #999;
+}
+
+.square {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+}
+
+.black {
+  background-color: #999;
+}
+
+.valid {
+  background-color: #90ee90;
+}
+
+.currentPiece {
+  font-size: 24px;
+  cursor: pointer;
+}
