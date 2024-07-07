@@ -2,6 +2,8 @@ let board = [];
 let boardSize = 8;
 let currentPiece = null;
 let validPositionsShown = false;
+const exitCol = 0;
+const exitRow = 0;
 
 const pieces = {
   // White pieces
@@ -193,13 +195,64 @@ function placePieceRandomly() {
   placePiece(randomPieceType, randomRow, randomCol);
 }
 
+function isWhitePiece(piece) {
+  return ["B", "R", "Q", "N"].includes(piece);
+}
+
 function placePiece(type, row, col) {
   const piece = document.createElement("span");
   piece.innerText = pieces[type];
-  piece.className = "currentPiece";
-  piece.addEventListener("click", toggleValidPositions);
+  piece.className = isWhitePiece(type) ? "currentPiece" : "piece";
+  if (isWhitePiece(type)) {
+    piece.addEventListener("click", toggleValidPositions);
+    currentPiece = { type, row, col };
+  }
   board[row][col].appendChild(piece);
-  currentPiece = { type, row, col };
+}
+
+function updateBoard() {
+  // Clear all cell classes except 'square' and 'black'
+  for (let row = 0; row < boardSize; row++) {
+    for (let col = 0; col < boardSize; col++) {
+      const cell = board[row][col];
+      cell.className =
+        "square" + (cell.classList.contains("black") ? " black" : "");
+    }
+  }
+
+  // Mark the current piece
+  const currentCell = board[currentPiece.row][currentPiece.col];
+  currentCell.classList.add("current");
+
+  // Mark the exit
+  board[exitRow][exitCol].classList.add("exit");
+}
+function movePiece(newRow, newCol) {
+  const { type, row, col } = currentPiece;
+  console.log(`Moving ${type} from (${row},${col}) to (${newRow},${newCol})`);
+
+  // Remove the piece from the old position
+  const oldCell = board[row][col];
+  const pieceElement = oldCell.querySelector(".currentPiece");
+  oldCell.innerHTML = "";
+
+  // Place the piece in the new position
+  const newCell = board[newRow][newCol];
+  newCell.appendChild(pieceElement);
+
+  // Update the currentPiece object
+  currentPiece.row = newRow;
+  currentPiece.col = newCol;
+
+  // Clear valid positions and update the board
+  clearValidPositions();
+  updateBoard();
+
+  // Check if the game is won (piece reached the exit)
+  if (newRow === exitRow && newCol === exitCol) {
+    alert("Congratulations! You've reached the exit!");
+    initializeGame(); // Restart the game
+  }
 }
 
 function clearBoard() {
@@ -225,17 +278,30 @@ function clearValidPositions() {
   board.forEach((row) =>
     row.forEach((square) => {
       square.classList.remove("valid");
+      if (square.moveHandler) {
+        square.removeEventListener("click", square.moveHandler);
+        square.moveHandler = null;
+      }
     })
   );
 }
 
 function showValidPositions() {
   const { type, row, col } = currentPiece;
+  console.log(currentPiece);
+
+  clearValidPositions(); // Clear previous valid positions
+
   directions[type].forEach(([dRow, dCol]) => {
     const newRow = row + dRow;
     const newCol = col + dCol;
     if (isValidPosition(newRow, newCol)) {
-      board[newRow][newCol].classList.add("valid");
+      console.log(`Valid move: ${newRow}, ${newCol}`);
+      const cell = board[newRow][newCol];
+      cell.classList.add("valid");
+      cell.removeEventListener("click", cell.moveHandler); // Remove previous listener
+      cell.moveHandler = () => movePiece(newRow, newCol); // Store the handler
+      cell.addEventListener("click", cell.moveHandler);
     }
   });
 }
@@ -244,6 +310,13 @@ function isValidPosition(row, col) {
   return row >= 0 && row < boardSize && col >= 0 && col < boardSize;
 }
 
+const isValidRow = (row) => {
+  const sum = row
+    .split("")
+    .reduce((acc, char) => acc + (isNaN(char) ? 1 : parseInt(char)), 0);
+  return sum === 8 && /^[pnbrqkPNBRQK1-8]+$/.test(row);
+};
+
 function isValidFEN(fen) {
   const fenParts = fen.split(" ");
   if (fenParts.length !== 6) return false;
@@ -251,41 +324,50 @@ function isValidFEN(fen) {
   const [piecePlacement, activeColor, castling, enPassant, halfmove, fullmove] =
     fenParts;
 
-  // Check piece placement
+  return (
+    isValidPiecePlacement(piecePlacement) &&
+    isValidActiveColor(activeColor) &&
+    isValidCastling(castling) &&
+    isValidEnPassant(enPassant) &&
+    isValidNumber(halfmove) &&
+    isValidNumber(fullmove) &&
+    isOnlyOneWhitePiece(piecePlacement)
+
+    // check if there is more than 1 white pieces
+  );
+}
+
+function isOnlyOneWhitePiece(words) {
+  return (
+    Array.from(words).filter((word) => ["B", "R", "Q", "N"].includes(word))
+      .length == 1
+  );
+}
+
+function isValidPiecePlacement(piecePlacement) {
   const rows = piecePlacement.split("/");
   if (rows.length !== 8) return false;
+  return rows.every(isValidRow);
+}
 
-  for (const row of rows) {
-    let sum = 0;
-    for (const char of row) {
-      if (isNaN(char)) {
-        if (!"pnbrqkPNBRQK".includes(char)) return false;
-        sum++;
-      } else {
-        sum += parseInt(char);
-      }
-    }
-    if (sum !== 8) return false;
-  }
+function isValidActiveColor(activeColor) {
+  return /^[wb]$/.test(activeColor);
+}
 
-  // Check active color
-  if (!"wb".includes(activeColor)) return false;
+function isValidCastling(castling) {
+  return /^[-KQkqHAha]*$/.test(castling);
+}
 
-  // Check castling (allowing custom 'HAha' in addition to standard '-KQkq')
-  if (!/^[-KQkqHAha]*$/.test(castling)) return false;
+function isValidEnPassant(enPassant) {
+  return /^(-|[a-h][36])$/.test(enPassant);
+}
 
-  // Check en passant target square
-  if (!/^-|[a-h][36]$/.test(enPassant)) return false;
-
-  // Check halfmove and fullmove numbers
-  if (isNaN(halfmove) || isNaN(fullmove)) return false;
-
-  return true;
+function isValidNumber(value) {
+  return !isNaN(value) && Number.isInteger(parseFloat(value));
 }
 
 // Example usage
 const testFEN = "5n2/8/7q/8/2n5/8/8/7N w HAha - 0 1";
-console.log(isValidFEN(testFEN)); // should return true if valid
 
 // Modify the initializeGame function to include FEN input
 function initializeGame() {
@@ -304,14 +386,14 @@ function initializeGame() {
 
 // Modify the loadFEN function to update the current piece
 function loadFEN(fen) {
+  clearBoard();
+
   if (!isValidFEN(fen)) {
     alert("Invalid FEN code");
     return;
   }
 
-  const [piecePlacement, activeColor] = fen.split(" ");
-
-  clearBoard();
+  const [piecePlacement] = fen.split(" ");
 
   let row = 0;
   let col = 0;
@@ -322,15 +404,18 @@ function loadFEN(fen) {
       col = 0;
     } else if (isNaN(char)) {
       placePieceFromFEN(char, row, col);
+      if (isWhitePiece(char)) {
+        setCurrentPiece(char);
+      }
       col++;
     } else {
       col += parseInt(char);
     }
   }
 
-  // Set the current piece based on active color
-  const currentPieceChar = activeColor === "w" ? "N" : "n";
-  setCurrentPiece(currentPieceChar);
+  // Set exit position (e.g., top-left corner)
+  board[exitRow][exitCol].classList.add("exit");
+  updateBoard();
 }
 
 function placePieceFromFEN(char, row, col) {
@@ -354,17 +439,20 @@ function getFENPieceType(char) {
   return fenToPieceType[char];
 }
 
-// Add this function to set the current piece
+// Add this function to set the current piecefunction setCurrentPiece(pieceChar) {
 function setCurrentPiece(pieceChar) {
   const pieceType = getFENPieceType(pieceChar);
+  console.log("To put as currentPiece: ", pieceChar, pieceType);
   if (pieceType) {
     for (let row = 0; row < boardSize; row++) {
       for (let col = 0; col < boardSize; col++) {
-        const piece = board[row][col].querySelector(".piece");
+        const piece = board[row][col].querySelector(".currentPiece");
         if (piece && piece.textContent === pieces[pieceType]) {
+          console.log("Current piece is:", pieceType, "at", row, col);
           currentPiece = { type: pieceType, row, col };
           piece.classList.add("currentPiece");
           piece.addEventListener("click", toggleValidPositions);
+          console.log(currentPiece);
           return;
         }
       }
@@ -389,8 +477,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.body.insertBefore(fenInput, document.getElementById("board"));
   document.body.insertBefore(loadFENButton, document.getElementById("board"));
-
-  initializeGame();
 
   initializeGame();
 });
