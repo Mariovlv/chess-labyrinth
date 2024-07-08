@@ -1,6 +1,10 @@
 # Chess Labyrinth
 
+V1
 ![Screenshot from 2024-07-06 22-56-55](https://github.com/Mariovlv/chess-labyrinth/assets/68300360/61dc16fa-80a9-4e76-abba-40f163eddefb)
+V2
+![Screenshot from 2024-07-07 20-18-24](https://github.com/Mariovlv/chess-labyrinth/assets/68300360/4159cfe2-7ba4-462c-867e-8e104c04a1a1)
+
 
 Chess Labyrinth is a chess-based puzzle game that combines elements of classic chess with labyrinth-style gameplay. Players navigate through a chess board, avoiding threats from a single opponent piece while trying to reach the exit.
 
