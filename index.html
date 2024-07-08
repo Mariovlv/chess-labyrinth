@@ -2,13 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chess Labyrinth</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Chess Laberynth</title>
+    <link rel="stylesheet" href="style.css" defer />
   </head>
   <body>
-    <h1>Chess Labyrinth</h1>
-    <div id="board"></div>
-    <script src="script.js"></script>
+    <div class="retro-container scanline-effect old-crt-monitor">
+      <header>
+        <h1>Chess Labyrinth</h1>
+        <nav role="navigation">
+          <ul>
+            <li><a href="#">Tutorial</a></li>
+            <li><a href="#">About</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main>
+        <section id="screen-1">
+          <div id="chess-game-container">
+            <div id="board"></div>
+            <input
+              type="text"
+              value="5n2/8/7q/8/2n5/8/8/7N w HAha - 0 1"
+              placeholder="5n2/8/7q/8/2n5/8/8/7N w HAha - 0 1"
+              id="fen-input"
+            />
+            <button id="fen-load-button">Load FEN</button>
+            <div id="alert-container"></div>
+          </div>
+        </section>
+      </main>
+      <footer>
+        <p>Created by Mariovlv</p>
+        <div class="social-links">
+          <a href="#" class="social-icon">GitHub</a>
+          <a href="#" class="social-icon">Twitter</a>
+        </div>
+      </footer>
+    </div>
   </body>
+  <script src="script.js"></script>
 </html>
